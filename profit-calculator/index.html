@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>เครื่องคำนวณกำไรต่อจำนวนกล่อง</title>
+  <meta name="description" content="คำนวณยอดขาย ต้นทุน และกำไรจากจำนวนกล่องแบบอัตโนมัติ">
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --ink: #14213d;
+      --muted: #5d6b82;
+      --line: #dce3ee;
+      --accent: #0f766e;
+      --accent-dark: #115e59;
+      --warm: #f59e0b;
+      --good: #15803d;
+      --shadow: 0 18px 45px rgba(20, 33, 61, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(15, 118, 110, 0.12), transparent 34%),
+        linear-gradient(315deg, rgba(245, 158, 11, 0.13), transparent 36%),
+        var(--bg);
+    }
+
+    main {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: minmax(280px, 0.95fr) minmax(320px, 1.25fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .intro,
+    .results {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(220, 227, 238, 0.9);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .intro {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 28px;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--accent-dark);
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3.65rem);
+      line-height: 1.06;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 1.04rem;
+      line-height: 1.7;
+    }
+
+    .input-group { display: grid; gap: 10px; }
+
+    label { font-weight: 800; color: var(--ink); }
+
+    input {
+      width: 100%;
+      min-height: 64px;
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      padding: 0 18px;
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--ink);
+      background: #fff;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.14);
+    }
+
+    .hint { margin: 0; color: var(--muted); font-size: 0.95rem; }
+
+    .facts { display: grid; gap: 10px; }
+
+    .fact {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+    }
+
+    .fact strong { color: var(--ink); white-space: nowrap; }
+
+    .results { padding: 24px; }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .metric {
+      min-height: 128px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .metric.highlight {
+      color: white;
+      border-color: var(--accent);
+      background: linear-gradient(135deg, var(--accent), #14b8a6);
+    }
+
+    .metric.profit {
+      color: white;
+      border-color: var(--good);
+      background: linear-gradient(135deg, var(--good), #22c55e);
+    }
+
+    .metric-label { font-size: 0.95rem; color: inherit; opacity: 0.78; }
+
+    .metric-value {
+      font-size: clamp(1.45rem, 3vw, 2.25rem);
+      line-height: 1.05;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .details {
+      display: grid;
+      gap: 10px;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+      margin-top: 14px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: #f8fafc;
+      color: var(--muted);
+      font-weight: 650;
+    }
+
+    .row span:last-child {
+      color: var(--ink);
+      font-weight: 850;
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+
+    .note {
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 820px) {
+      main { width: min(100% - 24px, 680px); padding: 18px 0; }
+      .app-shell, .summary { grid-template-columns: 1fr; }
+      .intro, .results { padding: 20px; }
+    }
+
+    @media (max-width: 420px) {
+      .fact, .row { flex-direction: column; gap: 6px; }
+      .row span:last-child { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="app-shell" aria-label="เครื่องคำนวณกำไร">
+      <div class="intro">
+        <div>
+          <p class="eyebrow">คำนวณจากจำนวนกล่อง</p>
+          <h1>เครื่องคำนวณกำไร</h1>
+          <p class="lead">กรอกจำนวนกล่อง แล้วระบบจะแสดงยอดขายรวม ค่าหุ่นรวม ค่าส่งรวม ต้นทุนรวม และกำไรรวมให้อัตโนมัติ</p>
+        </div>
+
+        <div class="input-group">
+          <label for="boxCount">จำนวนกล่อง</label>
+          <input id="boxCount" type="number" min="0" step="1" inputmode="numeric" value="1" aria-describedby="boxHint">
+          <p class="hint" id="boxHint">ใช้ตัวเลขจำนวนเต็ม เช่น 1, 5, 10</p>
+        </div>
+
+        <div class="facts" aria-label="ข้อมูลต่อกล่อง">
+          <div class="fact"><span>ราคาขายต่อกล่อง</span><strong>5,900 บาท</strong></div>
+          <div class="fact"><span>ต้นทุนต่อกล่อง</span><strong>3,569 บาท</strong></div>
+          <div class="fact"><span>กำไรต่อกล่อง</span><strong>2,331 บาท</strong></div>
+        </div>
+      </div>
+
+      <div class="results" aria-live="polite">
+        <div class="summary">
+          <article class="metric highlight">
+            <span class="metric-label">ยอดขายรวม</span>
+            <span class="metric-value" id="totalSales">0 บาท</span>
+          </article>
+          <article class="metric profit">
+            <span class="metric-label">กำไรรวม</span>
+            <span class="metric-value" id="totalProfit">0 บาท</span>
+          </article>
+        </div>
+
+        <div class="details">
+          <div class="row"><span>ค่าหุ่นรวม</span><span id="robotCost">0 บาท</span></div>
+          <div class="row"><span>ค่าส่งรวม</span><span id="shippingCost">0 บาท</span></div>
+          <div class="row"><span>ต้นทุนรวม</span><span id="totalCost">0 บาท</span></div>
+          <div class="row"><span>จำนวนกล่อง</span><span id="boxSummary">0 กล่อง</span></div>
+        </div>
+
+        <p class="note">สูตรคำนวณ: ยอดขาย = จำนวนกล่อง x 5,900 | ต้นทุนรวม = จำนวนกล่อง x 3,569 | กำไร = จำนวนกล่อง x 2,331</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const prices = { sale: 5900, robot: 3180, shipping: 389, totalCost: 3569, profit: 2331 };
+    const formatter = new Intl.NumberFormat("th-TH");
+    const boxInput = document.querySelector("#boxCount");
+    const fields = {
+      totalSales: document.querySelector("#totalSales"),
+      totalProfit: document.querySelector("#totalProfit"),
+      robotCost: document.querySelector("#robotCost"),
+      shippingCost: document.querySelector("#shippingCost"),
+      totalCost: document.querySelector("#totalCost"),
+      boxSummary: document.querySelector("#boxSummary")
+    };
+
+    function baht(value) { return `${formatter.format(value)} บาท`; }
+
+    function getBoxCount() {
+      const value = Number.parseInt(boxInput.value, 10);
+      return Number.isFinite(value) && value > 0 ? value : 0;
+    }
+
+    function updateTotals() {
+      const boxes = getBoxCount();
+      fields.totalSales.textContent = baht(boxes * prices.sale);
+      fields.totalProfit.textContent = baht(boxes * prices.profit);
+      fields.robotCost.textContent = baht(boxes * prices.robot);
+      fields.shippingCost.textContent = baht(boxes * prices.shipping);
+      fields.totalCost.textContent = baht(boxes * prices.totalCost);
+      fields.boxSummary.textContent = `${formatter.format(boxes)} กล่อง`;
+    }
+
+    boxInput.addEventListener("input", updateTotals);
+    updateTotals();
+  </script>
+</body>
+</html>
